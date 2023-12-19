@@ -1,346 +1,59 @@
-
 # 🪴 career-WBS
-> mermaid로 작성된 과제는 마크다운 파일(WBS.md)로 올려주시면 됩니다. (md 파일 내에 기존 구조를 넣어주세요) <br>
-> 별도 아키택쳐나 모델링 도구를 사용한 경우에는 마크다운 파일(WBS.md)과 png, gif, jpg, pdf 파일 형식으로 WBS-{gitID}.png 파일명으로 upload 해주세요
-# 요구사항
-- [ ] 개선하려는 프로젝트의 최종 설계
-    - [ ] 변경 사항에 대한 Target 시스템 설계를 확정한다. (2주차 미션 활용)
-    - [ ] 변경 사항에 대한 기대효과를 확정한다. (2주차 미션 활용)
-- [ ] task list 도출
-    - [ ] 현 시스템에서 변경되는 부분을 class diagram(DB변경이 발생할 경우 ERD추가)으로 작성
-    - [ ] 변경, 추가 될 프로그램들의 작업 목록을 작성한다.
-- [ ] 일정 계획 문서 (WBS)
-  - [ ] 작업목록의 소요일정을 산정 한다.
-  - [ ] 작업 목록의 의존성을 정의 한다.
-  - [ ] 작업 목록의 전체 일정을 작성한다.
-  - [ ] 진행 상태를 check하기위한 마일스톤 설정 한다.
-
+- 이름: 박상권
 
 # 🚀미션
+- 결제 취소 기능 마이그레이션
+
 ## AS-IS
-### AS-IS 개선포인트 분석
-- 매일 전날의 결제 데이터중 timeout이 발생한 결제 건에 대한 리포트를 받아서 해당건을 확인 하고 있다.
-- timeout이 발생하였을 경우 해당 건이 PG에서 결제가 되엇는지 안되엇는지? 알수 없기 때문에 해당 승인건의 key를 pg사의 관리자 페이지에서 하나하나 확인 한다.
-- 승인되었다면 해당 건을 취소하고 운영DB에 결제 실패로 수기 처리한다.
-- 승인이 되지 않았다면 운영DB에 결제 실패로 수기 처리한다.
-- 매일 timeout건을 확인하고 처리하는데 하루 2시간씩 고정적인 비용이 발생하고 있다. 
- 
-### AS-IS 프로세스
-```mermaid
+### 개선포인트 분석
+- 취소 기능에 대한 레거시 코드에서 계속해서 취소 기능에 대한 개발이 이루어져 현재 유지보수가 불가한 상태
+- 이 상태에서도 추가적인 개발이 일어나면 취소 기능은 어쩔 수 없이 기능 개발이 일어나고 있는 상태
+- 그로인해서 취소 기능과 관련된 여러 장애가 발생해도 걷잡을 수 없는 상태
+
+### 프로세스
 flowchart TB
-    A[Start] --주문요청--> B(승인)
-    B --> C{PG요청}
-    C -- Success --> D[주문완료]
-    C -- Fail --> E[결제취소]
-    C -- Timeout --> F[데이터보정]
-```
+A[Start] -- 결제 취소 요청 -> B[가맹점 요청 파라미터 검사]
+B --> C[가맹점 조회]
+C --> D[승인 거래 조회]
+C --> E[취소 금액 계산]
+E --> F[결제 취소 진행]
+F --> G[결제사 측으로 결제 취소 API 요청]
+H --> H[취소 API 응답에 대한 DB 후 처리 진행]
 
-### Class diagram
-- AS-IS 구조에서 개선을 할때 영향을 받게되는 class diagram을 작성한다.
-```mermaid
-classDiagram 
+### Before class diagram
+- WBS-pawoo0211-Class.md
 
-    class PaymentMethod {
-        +String paymentMethodID
-        pay()
-        cancel()
-    }
-    PaymentMethod <|-- Card
-    PaymentMethod <|-- Bank
-
-    class PG {
-        +String pgID
-        pay()
-        cancel()
-    }
-    PG <|-- Card
-    PG <|-- Bank
-
-
-    class Payment {
-        +String paymentID
-        +String transactionID
-        void pay()
-    }
-
-    class Cancel {
-        +String cancelID
-        +PaymentID paymentID
-        +String transactionID
-        void cancel()
-    }
-
-    class CancelDetail {
-        +String cancelDetailID
-        +String cancelID
-    }
-
-    class PaymentDetail {
-        +PaymentID paymentID
-    }
-
-
-    class Card {
-        CardID
-        pay()
-        cancel()
-        checkTransaction()
-    }
-    note for Card "checkTransaction() : 결제내역확인"
-
-    class Bank {
-        BankID
-        pay()
-        cancel()
-        checkTransaction()
-    }
-    note for Bank "checkTransaction() : 결제내역확인"
-
-   Payment "1" -- "*" PaymentDetail : 결제수단, 금액, 상품 정보
-   Cancel "1" -- "*" CancelDetail : 결제수단, 금액, 상품 정보
-   Cancel "0..1" --> "1" Payment : 원결제 정보
-   Payment --> PaymentMethod : 결제요청
-   Cancel --> PaymentMethod : 취소요청
-
-
-```
-
-
-### ERD
--AS-IS 구조에서 개선을 할때 영향을 받게되는 ERD를 작성한다.
-
-```mermaid
-erDiagram
-  Payment {
-    Integer id 
-    String name
-  }
-  Payment ||--|{ PaymentDetail : has
-
-  PaymentMethod {
-    Integer id
-    String name 
-  }
-
-  PaymentDetail {
-    Integer id
-    Integer paymentId
-    Integer paymentMethodId
-    Long productId
-    Integer amount
-    Integer quantity
-    Integer unitPrice
-    String productInfo
-  }
-  PaymentDetail ||--|{ PaymentMethod : fundingsource
-
-  Cancel {
-    Integer id
-    Integer paymentId
-    String transactionId
-  }
-  Cancel ||--|{ CancelDetail : has
-  CancelDetail ||--|{ PaymentMethod : fundingsource
-
-  CancelDetail {
-    Integer id
-    Integer cancelId
-    Integer amount
-    String productInfo
-  }
-
-  PaymentDetail {
-    String paymentId
-    String paymentMethodId
-  }
-
-  CancelDetail {
-    String cancelId
-  }
-
-  
-```
-
+### Before ERD
+- WBS-pawoo0211-ERD.md
 
 
 ## TO-BE 
-### TO-BE 기대효과 분석
-- timeout 건을 처리하는데 매일 소요되는 2시간의 업무 시간을 30분 내외로 줄일 수 있다.
-- 사람이 직접 하는 부분을 자동화 하여 실수를 줄일 수 있다.
-    - 가끔 결제가 되었는데 timeout건으로 나왔으나 수기처리시 누락된 경우 고객의 CS 클래임이 인입되고 좋지않은 고객경험을 준다.
-    - timeout 갤제 CS인입건 1건/week 을 0건으로 줄일 수 있다.
-- 익일 처리되던 프로세스를 5분단위의 batch로 처리하여서 고객만족을 줄 수 있다.
-    - 주문은 실패 했지만 결제가 되었다는 CS 건 3건/week를 0건으로 줄일 수 있다.
- 
-### TO-BE 프로세스
-```mermaid
+### 기대효과 분석
+- JSP와 JDBC Template을 이용한 코드에서 스프링 부트와 MyBatis, JPA 적용
+- 메서드 하나에 존재하는 수백 라인의 코드 단축으로 인한 가시성 향상
+- 취소 기능에 대한 유지 보수성 증가
+- 새로운 결제 수단이 추가될 때마다 공통화 된 취소 기능을 사용하여 빠른 개발 진행
+
+### 기술적용 아키텍쳐
 flowchart TB
- G[Start] --주문요청 --> H(승인)
-    H --> I(PG요청)
-    I -- Success --> J[주문완료]
-    I -- Fail --> K[결제취소]
-    I -- Timeout --> L[재처리]
-    L -- 승인확인 --> M(PG)
-    M -- 결제실패 --> Z(완료)
-    M -- 결제성공 --> O(승인취소)
-    O --> Z
+A,B[Spring boot]
+C,D[JPA]
+E,F,G[Spring boot]
+H[My Batis]
 
-```
+    A[Start] -- 결제 취소 요청 -> B[가맹점 요청 파라미터 검사]
+    B --> C[가맹점 조회]
+    C --> D[승인 거래 조회]
+    C --> E[취소 금액 계산]
+    E --> F[결제 취소 진행]
+    F --> G[결제사 측으로 결제 취소 API 요청]
+    H --> H[취소 API 응답에 대한 DB 후 처리 진행]
 
-### class diagram
-- class diagram
-```mermaid
-classDiagram
+### After class diagram
+- 신규 서버의 소스 코드 분석에 따라 점진적으로 클래스 모델링 진행 예정
 
-    class PaymentMethod {
-        +String paymentMethodID
-        pay()
-        cancel()
-    }
-    PaymentMethod <|-- Card
-    PaymentMethod <|-- Bank
-
-    class PG {
-        +String pgID
-        pay()
-        cancel()
-    }
-    PG <|-- Card
-    PG <|-- Bank
-
-
-    class Payment {
-        +String paymentID
-        +String transactionID
-        void pay()
-    }
-
-    class Cancel {
-        +String cancelID
-        +PaymentID paymentID
-        +String transactionID
-        void cancel()
-    }
-
-    class CancelDetail {
-        +String cancelDetailID
-        +String cancelID
-    }
-
-    class PaymentDetail {
-        +PaymentID paymentID
-    }
-
-
-    class Card {
-        CardID
-        pay()
-        cancel()
-        checkTransaction()
-    }
-    note for Card "checkTransaction() : 결제내역확인"
-
-    class Bank {
-        BankID
-        pay()
-        cancel()
-        checkTransaction()
-    }
-    note for Bank "checkTransaction() : 결제내역확인"
-
-   Payment "1" -- "*" PaymentDetail : 결제수단, 금액, 상품 정보
-   Cancel "1" -- "*" CancelDetail : 결제수단, 금액, 상품 정보
-   Cancel "0..1" --> "1" Payment : 원결제 정보
-   Payment --> PaymentMethod : 결제요청
-   Cancel --> PaymentMethod : 취소요청
-
-
-   class PaymentTiemoutListner {
-        +beforeCancelForTimeout()
-        -checkLimitRetryCount()
-        -isPay()
-        +cancelForTimeout()
-        +postCancelForTimeout()
-   }
-
-   class timeoutResultNotification {
-        sendNotification()
-   }
-
-
-    PaymentTiemoutListner "1" -- "1" Payment : 원결제확인
-    Payment --> PaymentTiemoutListner : Timeout Event
-    PaymentTiemoutListner --> PaymentMethod : cancel 처리
-
-```
-    
-
-### ERD
-- TO-BE 구조에서 변경되는 ERD를 작성한다.
-```mermaid
-erDiagram
-  Payment {
-    Integer id 
-    String name
-  }
-  Payment ||--|{ PaymentDetail : has
-
-  PaymentMethod {
-    Integer id
-    String name 
-  }
-
-  PaymentDetail {
-    Integer id
-    Integer paymentId
-    Integer paymentMethodId
-    Long productId
-    Integer amount
-    Integer quantity
-    Integer unitPrice
-    String productInfo
-  }
-  PaymentDetail ||--|{ PaymentMethod : fundingsource
-
-  Cancel {
-    Integer id
-    Integer paymentId
-    String transactionId
-  }
-  Cancel ||--|{ CancelDetail : has
-  CancelDetail ||--|{ PaymentMethod : fundingsource
-
-  CancelDetail {
-    Integer id
-    Integer cancelId
-    Integer amount
-    String productInfo
-  }
-
-  PaymentDetail {
-    String paymentId
-    String paymentMethodId
-  }
-
-  CancelDetail {
-    String cancelId
-  }
-
-  payTimeoutRetry {
-    String id
-    Integer retryCnt
-    String status
-  }
-
-  payTimeoutRetryHistories {
-    String id
-    String status
-  }
-
-payTimeoutRetry ||--o{ Retry-Process : do
-payTimeoutRetryHistories ||--o{ Retry-Process : dohistories
-
-```
+### After ERD
+- 기존 ERD와 동일
 
 ## Task List
 1. Timeout 발생 시 Event발생 수정- SQS, SNS <br>
@@ -354,45 +67,17 @@ payTimeoutRetryHistories ||--o{ Retry-Process : dohistories
 6. Timeout 재처리 실패시 메일 발송 모듈.<br>
 
 ## WBS
-1. 요구사항 분석 : 이미수행
-2. 설계 : 3d
-3. 일정산정: 1d
-4. Timeout 발생 시 Event발생 수정- SQS, SNS : 이미 사용하는 SQS가 있고 큐생성 및 기존코드 수정 : 2d
-5. Timeout event subscription module 작성 : SQS, SNS : 이미 사용하는 SQS가 있고 신규 class 생성 : 2d
-6. Timeout log table 설계, 생성 : 1d
-7. Timeout 재처리 service 설개, 구현 : 2d
-    1. transaction 성공여부 확인 : 0.5d
-    2. transaction 취소 처리 하기 (결제시) : 0.5d
-    3. 재처리 logging(DB) : 처리 횟수(3회), 처리 내역 : 1d
-8. Timeout 재처리 현황 조회 어드민 page.: 기존 admin에 메뉴 추가 : 5d
-9. Timeout 재처리 실패시 메일 발송 모듈: 기존 notification에 method 추가 : 1d
-
-```mermaid
-gantt
-    dateFormat  YYYY-MM-DD
-    title       결제 재처리 WBS
-    excludes    weekends, 2023-12-25, 2024-01-01
-    %% (`excludes` accepts specific dates in YYYY-MM-DD format, days of the week ("sunday") or "weekends", but not the word "weekdays".)
-
-    section prepare
-    요구사항분석                    :done,    des1, 2023-12-01, 10d
-    설계                            :active,  des2, 2023-12-11, 3d
-    일정산정                        :         des3, after des2, 1d
-    Timeout log table 설계, 생성    :       des4, 2023-12-27, 1d
-
-    section 기존 모듈 수정
-    Payment timeout event 발생          :crit, b1, 2024-01-03,2d
-    Cancel timeout용 cancel 추가        :crit, b2, 2024-01-10, 2d
-
-    section 신규 모듈 구현
-    Timeout event consumer 모듈작성    :c1, after b1, 2d
-    Queue 동작확인                      :milestone, after c1, 0d
-    Timeout service 구현                  :c2, after b2  , 2d
-    Timeout 재처리 현황 조회 어드민 개발    :c3, after c2  , 5d
-    Timeout 재처리 실패시 notification     : c4, after c3, 1d
-
-    section 테스트
-    Test & QA                           :after c4, 2d
-
-```
-
+- 요구사항 분석: 이미 수행
+- 도메인 분석: 이미 수행
+- 일정 산정: 이미 수행
+1. 결제 취소 시 레거시 서버에서 신규 서버로 연결 작업 진행-3d(2023-12-13~15)
+2. 결제 취소에 대한 요청 파라미터 검증-2d(2023-12-18~19)
+3. 가맹점 정보 조회-3d(2023-12-20~22)
+4. 승인 거래 조회-2d(2023-12-26~27)
+5. 취소 가능한 승인 거래인지 검증 및 예외 처리-2d(2023-12-28~29)
+6. 취소 금액 계산-4d(2024-01-02~05)
+7. 취소 금액 저장-1d(2024-01-08)
+8. 취소 진행에 따른 카드 매입사 취소 요청-4d(2024-01-09~12, 방화벽 설정 포함 기간)
+9. 취소 응답에 따른 DB 후 처리-1d(2024-01-15)
+10. 취소 메일 HTML 전송-4d(2024-01-16~20)
+11. 실 결제 취소 테스트에 따른 보완 작업 진행-10d(2024-01-22~2024-02-02)
