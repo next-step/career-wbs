@@ -71,70 +71,73 @@ flowchart TD
 #### 2. 배치 개선
 ```mermaid
 classDiagram 
-
-    class PaymentMethod {
-        +String paymentMethodID
-        pay()
-        cancel()
-    }
-    PaymentMethod <|-- Card
-    PaymentMethod <|-- Bank
-
-    class PG {
-        +String pgID
-        pay()
-        cancel()
-    }
-    PG <|-- Card
-    PG <|-- Bank
-
-
-    class Payment {
-        +String paymentID
-        +String transactionID
-        void pay()
+    class expiration {
+        +_int4 notifiedtype
+        +timestamp endtime
+        +String linkedaccount
+        +String reservedinstanceid
     }
 
-    class Cancel {
-        +String cancelID
-        +PaymentID paymentID
-        +String transactionID
-        void cancel()
+    class send_standard {
+        +String sendType
+        +boolean useyn
     }
-
-    class CancelDetail {
-        +String cancelDetailID
-        +String cancelID
+    
+    class usage_notification {
+        +int sendamount
+        +String sumtype
+        +Long send_standard_id
     }
-
-    class PaymentDetail {
-        +PaymentID paymentID
+    usage_notification -- send_standard
+    
+    class email_address {
+        +int useridx
+        +String email
+        +int languageid
+        +boolean isSubscripion
     }
-
-
-    class Card {
-        CardID
-        pay()
-        cancel()
-        checkTransaction()
+    
+    class email_group {
+        +String name
+        +_text emailidlist
+        +int useridx
     }
-    note for Card "checkTransaction() : 결제내역확인"
-
-    class Bank {
-        BankID
-        pay()
-        cancel()
-        checkTransaction()
+    email_address -- email_group
+    
+    class tag_standard {
+        +long id
+        +String tagname
     }
-    note for Bank "checkTransaction() : 결제내역확인"
+    
+    class email_mapping {
+        +long emailid
+        +int useridx
+        +int tagid 
+        +int tableid
+    }
+    email_mapping -- email_address
+    email_mapping -- tag_standard
+    email_mapping <|-- usage_notification
+    email_mapping <|-- expiration
+    
+    class expiration_target {
+      +_String emails
+      +_long tableids
+      +_String expirationids
+      +_String linkedaccount
+      +_String notifiedtypes
+    }
+    expiration_target "*"--"1" email_mapping
 
-   Payment "1" -- "*" PaymentDetail : 결제수단, 금액, 상품 정보
-   Cancel "1" -- "*" CancelDetail : 결제수단, 금액, 상품 정보
-   Cancel "0..1" --> "1" Payment : 원결제 정보
-   Payment --> PaymentMethod : 결제요청
-   Cancel --> PaymentMethod : 취소요청
-
-
+  class hyper_batch_execution {
+    +int executiontagid
+    +text sendcontent
+    +timestamp billingdt
+    +timestamp senddt
+  }
+  hyper_batch_execution "*"--"1" expiration_target
+  hyper_batch_execution "1"--"1" email_mapping : 사용량 알림
+  
 ```
 
 
@@ -143,54 +146,25 @@ classDiagram
 
 ```mermaid
 erDiagram
-  Payment {
-    Integer id 
-    String name
-  }
-  Payment ||--|{ PaymentDetail : has
-
-  PaymentMethod {
-    Integer id
-    String name 
-  }
-
-  PaymentDetail {
-    Integer id
-    Integer paymentId
-    Integer paymentMethodId
-    Long productId
-    Integer amount
-    Integer quantity
-    Integer unitPrice
-    String productInfo
-  }
-  PaymentDetail ||--|{ PaymentMethod : fundingsource
-
-  Cancel {
-    Integer id
-    Integer paymentId
-    String transactionId
-  }
-  Cancel ||--|{ CancelDetail : has
-  CancelDetail ||--|{ PaymentMethod : fundingsource
-
-  CancelDetail {
-    Integer id
-    Integer cancelId
-    Integer amount
-    String productInfo
+  hyper_batch_execution {
+    Long id 
+    Integer executiontagid
+    Long tableid
+    Integer useridx
+    boolean active
+    timestamp billingdt
+    String sendtype
+    text sendContent
   }
 
-  PaymentDetail {
-    String paymentId
-    String paymentMethodId
-  }
+   expiration_target {
+    _String emails
+    _Long tableids
+    _String expirationids
+    _String linkedaccount
+    _String notifiedtypes
+}
 
-  CancelDetail {
-    String cancelId
-  }
-
-  
 ```
 
 
