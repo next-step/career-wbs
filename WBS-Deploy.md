@@ -109,18 +109,18 @@ gantt
     %% (`excludes` accepts specific dates in YYYY-MM-DD format, days of the week ("sunday") or "weekends", but not the word "weekdays".)
 
     section prepare
-    요구사항분석                    :done,    des1, 2023-12-01, 10d
-    설계                            :active,  des2, 2023-12-11, 3d
-    일정산정                        :         des3, after des2, 1d
-    코드 커밋 웹훅 추가              :       des4, 2023-12-27, 1d
+    요구사항분석                                     :done,    des1, 2023-12-01, 10d
+    설계                                           :active,  des2, 2023-12-11, 3d
+    일정산정                                        :active, des3, after des2, 1d
+    코드 커밋 웹훅 추가                              :des4, 2024-01-03, 1d
 
     section AWS 파이프라인 설계
-    AWS 파이프라인 스크립트 작성          :crit, b1, 2024-01-03,2d
-    AWS 파이프라인 테스트 스크립트 작성    :crit, b2, 2024-01-10, 2d
-    코드 빌드 스크립트 작성    :c1, after b1, 2d
-    코드 디플로이 스크립트 작성                      :c2, after c1, 2d
-    EC2 배포 스크립트 작성                  :c3, after b2  , 2d
-    슬랙 메시지 공유 스크립트 작성    :c4, after c3  , 4d
+    AWS 파이프라인 스크립트 작성                      :b1, after des4, 2d
+    AWS 파이프라인 테스트 스크립트 작성                :b2, after b1, 2d
+    코드 빌드 스크립트 작성                          :c1, after b2, 2d
+    코드 디플로이 스크립트 작성                       :c2, after c1, 2d
+    EC2 배포 스크립트 작성                          :c3, after c2  , 2d
+    슬랙 메시지 공유 스크립트 작성                    :c4, after c3  , 4d
 
     Test & QA                           :after c4, 2d
 

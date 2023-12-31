@@ -177,23 +177,126 @@ flowchart TD
 
 ### class diagram
 - class diagram
-```mermaid```
+
+```mermaid
+classDiagram 
+    class expiration {
+        +_int4 notifiedtype
+        +timestamp endtime
+        +String linkedaccount
+        +String reservedinstanceid
+    }
+
+    class send_standard {
+        +String sendType
+        +boolean useyn
+    }
     
+    class usage_notification {
+        +int sendamount
+        +String sumtype
+        +Long send_standard_id
+    }
+    usage_notification -- send_standard
+    
+    class email_address {
+        +int useridx
+        +String email
+        +int languageid
+        +boolean isSubscripion
+    }
+    
+    class email_group {
+        +String name
+        +_text emailidlist
+        +int useridx
+    }
+    email_address -- email_group
+    
+    class tag_standard {
+        +long id
+        +String tagname
+    }
+    
+    class email_mapping {
+        +long emailid
+        +int useridx
+        +int tagid 
+        +int tableid
+    }
+    email_mapping -- email_address
+    email_mapping -- tag_standard
+    email_mapping <|-- usage_notification
+    email_mapping <|-- expiration
+    
+    class expiration_target {
+      +_String emails
+      +_long tableids
+      +_String expirationids
+      +_String linkedaccount
+      +_String notifiedtypes
+    }
+    expiration_target "*"--"1" email_mapping
+
+  class hyper_batch_execution {
+    +int executiontagid
+    +text sendcontent
+    +timestamp billingdt
+    +timestamp senddt
+  }
+  hyper_batch_execution "*"--"1" expiration_target
+  hyper_batch_execution "1"--"1" email_mapping : 사용량 알림
+  
+  class hyper_batch_job_execution {
+    +int jobexecutiontagid
+    +String status
+    +timestamp batchdt
+  }
+  hyper_batch_job_execution "1"--"1" hyper_batch_execution
+
+  class hyper_batch_step_execution {
+    +int stepexecutiontagid
+    +String status
+    +String exit_code
+    +String exit_message
+    +timestamp batchdt
+  }
+  hyper_batch_step_execution "*"--"1" hyper_batch_job_execution
+
+```
 
 ### ERD
 - TO-BE 구조에서 변경되는 ERD를 작성한다.
-```mermaid```
+```mermaid
+erDiagram
+  hyper_batch_job_execution {
+    int jobexecutiontagid
+    String status
+    timestamp createdt
+    timestamp updatedt
+  }
 
+   hyper_batch_step_execution {
+    int stepexecutiontagid
+    String status
+    String exit_code
+    String exit_message
+    timestamp createdt
+    timestamp updatedt
+}
+
+```
 ## Task List
-1. Timeout 발생 시 Event발생 수정- SQS, SNS <br>
-2. Timeout event subscription module 작성<br>
-3. Timeout log table 설계, 생성<br>
-4. Timeout 재처리 service 설개, 구현<br>
-&nbsp; &nbsp; 1. transaction 성공여부 확인 <br>
-&nbsp; &nbsp; 2. transaction 취소 처리 하기 (결제시)<br>
-&nbsp; &nbsp; 3. 재처리 logging(DB) : 처리 횟수(3회), 처리 내역<br>
-5. Timeout 재처리 현황 조회 어드민 page.<br>
-6. Timeout 재처리 실패시 메일 발송 모듈.<br>
+1. 기존 Job, Step 분석 및 설계
+2. Job을 Type 별 개별 Job으로 분리
+2. 사용량/Sp 알림의 Job 내부 Step의 일별, 월별 별 분리
+4. 잡 실행시 성공 및 실패 케이스 로그가 아닌 DB 저장
+  1. 세부 잡, 스탭 테이블 설계
+  2. 결과 저장 코드 추가
+5. 테스트 개선
+    1. 테스트 결과가 저장되지 않고 롤백되도록 변경
+    2. 외부 서비스의 경우 mocking
+    3. 테스트를 Step, Job별 테스트로 분리
 
 
 ## WBS
@@ -203,15 +306,16 @@ flowchart TD
 1. 요구사항 분석 : 이미수행
 2. 설계 : 3d
 3. 일정산정: 1d
-4. Timeout 발생 시 Event발생 수정- SQS, SNS : 이미 사용하는 SQS가 있고 큐생성 및 기존코드 수정 : 2d
-5. Timeout event subscription module 작성 : SQS, SNS : 이미 사용하는 SQS가 있고 신규 class 생성 : 2d
-6. Timeout log table 설계, 생성 : 1d
-7. Timeout 재처리 service 설개, 구현 : 2d
-    1. transaction 성공여부 확인 : 0.5d
-    2. transaction 취소 처리 하기 (결제시) : 0.5d
-    3. 재처리 logging(DB) : 처리 횟수(3회), 처리 내역 : 1d
-8. Timeout 재처리 현황 조회 어드민 page.: 기존 admin에 메뉴 추가 : 5d
-9. Timeout 재처리 실패시 메일 발송 모듈: 기존 notification에 method 추가 : 1d
+4. 기존 Job, Step 분석 및 설계: 3d
+5. Job을 Type 별 개별 Job으로 분리: 2d
+6. 사용량/Sp 알림의 Job 내부 Step의 일별, 월별 별 분리: 3d
+7. 잡 실행시 성공 및 실패 케이스 로그가 아닌 DB 저장: 3d
+  1. 세부 잡, 스탭 테이블 설계: 1d
+  2. 결과 저장 코드 추가: 2d
+8. 테스트 개선: 7d
+    1. 테스트 결과가 저장되지 않고 롤백되도록 변경: 5d
+    2. 외부 서비스의 경우 mocking: 1d
+    3. 테스트를 Step, Job별 테스트로 분리: 1d
 
 ```mermaid
 gantt
@@ -221,24 +325,26 @@ gantt
     %% (`excludes` accepts specific dates in YYYY-MM-DD format, days of the week ("sunday") or "weekends", but not the word "weekdays".)
 
     section prepare
-    요구사항분석                    :done,    des1, 2023-12-01, 10d
-    설계                            :active,  des2, 2023-12-11, 3d
-    일정산정                        :         des3, after des2, 1d
-    Timeout log table 설계, 생성    :       des4, 2023-12-27, 1d
+    요구사항분석                                           :done,    des1, 2023-12-01, 10d
+    설계                                                 :active,  des2, 2023-12-11, 3d
+    일정산정                                              :active, des3, after des2, 1d
+    
+    section 기존 코드 분석 및 분리
+    기존 Job, Step 분석 및 설계                            :des4, 2024-01-25, 3d
+    Job을 Type 별 개별 Job으로 분리                        :des5, after des4, 2d
+    사용량/Sp 알림의 Job 내부 Step의 일별, 월별 별 분리       :des6, after des5, 3d
 
-    section 기존 모듈 수정
-    Payment timeout event 발생          :crit, b1, 2024-01-03,2d
-    Cancel timeout용 cancel 추가        :crit, b2, 2024-01-10, 2d
+    section 잡 실행시 성공 및 실패 케이스 로그가 아닌 DB 저장
+    세부 잡, 스탭 테이블 설계                               :b1, after des6,2d
+    결과 저장 코드 추가                                    :b2, after b1, 1d
 
-    section 신규 모듈 구현
-    Timeout event consumer 모듈작성    :c1, after b1, 2d
-    Queue 동작확인                      :milestone, after c1, 0d
-    Timeout service 구현                  :c2, after b2  , 2d
-    Timeout 재처리 현황 조회 어드민 개발    :c3, after c2  , 5d
-    Timeout 재처리 실패시 notification     : c4, after c3, 1d
+    section 테스트 개선
+    테스트 결과가 저장되지 않고 롤백되도록 변경                :c1, after b2, 2d
+    외부 서비스의 경우 mocking                             :c2, after c1, 1d
+    테스트를 Step, Job별 테스트로 분리                      :c3, after c2, 1d
 
     section 테스트
-    Test & QA                           :after c4, 2d
+    Test & QA                                           :after c3, 2d
 
 ```
 
