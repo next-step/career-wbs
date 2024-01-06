@@ -9,8 +9,8 @@
 - [x] task list 도출
     - [x] 현 시스템에서 변경되는 부분을 class diagram(DB변경이 발생할 경우 ERD추가)으로 작성
     - [x] 변경, 추가 될 프로그램들의 작업 목록을 작성한다.
-- [ ] 일정 계획 문서 (WBS)
-  - [ ] 작업목록의 소요일정을 산정 한다.
+- [x] 일정 계획 문서 (WBS)
+  - [x] 작업목록의 소요일정을 산정 한다.
   - [ ] 작업 목록의 의존성을 정의 한다.
   - [ ] 작업 목록의 전체 일정을 작성한다.
   - [ ] 진행 상태를 check하기위한 마일스톤 설정 한다.
@@ -110,17 +110,17 @@ gantt
 
     section prepare
     요구사항분석                                     :done,    des1, 2023-12-01, 10d
-    설계                                           :active,  des2, 2023-12-11, 3d
-    일정산정                                        :active, des3, after des2, 1d
-    코드 커밋 웹훅 추가                              :des4, 2024-01-03, 1d
+    설계                                           :done,  des2, 2023-12-11, 3d
+    일정산정                                        :done, des3, after des2, 1d
+    코드 커밋 웹훅 추가                              :done, des4, 2024-01-03, 1d
 
     section AWS 파이프라인 설계
-    AWS 파이프라인 스크립트 작성                      :b1, after des4, 2d
-    AWS 파이프라인 테스트 스크립트 작성                :b2, after b1, 2d
-    코드 빌드 스크립트 작성                          :c1, after b2, 2d
-    코드 디플로이 스크립트 작성                       :c2, after c1, 2d
-    EC2 배포 스크립트 작성                          :c3, after c2  , 2d
-    슬랙 메시지 공유 스크립트 작성                    :c4, after c3  , 4d
+    AWS 파이프라인 스크립트 작성 1                     :done, b1, after des4, 2d
+    AWS 파이프라인 테스트 스크립트 작성 2               :done, b2, after b1, 2d
+    코드 빌드 스크립트 작성                          :done, c1, after b2, 2d
+    코드 디플로이 스크립트 작성                       :done, c2, after c1, 2d
+    EC2 배포 스크립트 작성                          :done, c3, after c2  , 2d
+    슬랙 메시지 공유 스크립트 작성                    :active, c4, after c3  , 4d
 
     Test & QA                           :after c4, 2d
 
