@@ -50,7 +50,8 @@ flowchart TD
 ### TO-BE 기대효과 분석
 
 - __개선 배포 과정__:\
-CodeCommit의 stage 브랜치이 업데이트되면 AWS의 코드 비륻와 코드 디플로이를 통해 자동 배포되도록 한다. 
+CodeCommit의 master 브랜치에 푸쉬되면 AWS cloudwatch에서 자동 감지하여 AWS pipeline을 실행한다. \
+AWS pipeline은 AWS codebuild와 codedeploy 그리고 slack에 메시지를 보낼 lambda로 구성되어 자동으로 CI/CD 및 알림을 보낸다. 
 - __알림 기능 추가__:\
   배포가 완료된 후 slack의 어떤 커밋이 올라갔는지 알림이 보내진다
 
