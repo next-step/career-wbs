@@ -326,11 +326,12 @@ gantt
 
     section prepare
     요구사항분석                                           :done,    des1, 2023-12-01, 10d
-    설계                                                 :active,  des2, 2023-12-11, 3d
-    일정산정                                              :active, des3, after des2, 1d
+    설계                                                 :done,  des2, 2023-12-11, 3d
+    일정산정                                              :done, des3, after des2, 1d
+    deploy project 종료                                  :active, deploy, 2024-01-03  , 22d
     
     section 기존 코드 분석 및 분리
-    기존 Job, Step 분석 및 설계                            :des4, 2024-01-25, 3d
+    기존 Job, Step 분석 및 설계                            :des4, after deploy , 3d
     Job을 Type 별 개별 Job으로 분리                        :des5, after des4, 2d
     사용량/Sp 알림의 Job 내부 Step의 일별, 월별 별 분리       :des6, after des5, 3d
 
